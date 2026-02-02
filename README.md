@@ -124,6 +124,60 @@ node dist/index.js gateway onboard
 
 ---
 
+## Phase 4b: OpenCode Zen API Setup (Free Kimi K2.5)
+
+To use the free Kimi K2.5 model, you need an OpenCode Zen API key:
+
+### Step 1: Get API Key
+1. Visit https://opencode.ai/zen
+2. Sign up for a free account
+3. Navigate to API Keys section
+4. Generate a new API key
+5. Copy the key (starts with `oc-`)
+
+### Step 2: Configure OpenClaw
+Add the API key to your OpenClaw config:
+
+```bash
+# Edit the config file
+nano ~/.openclaw/openclaw.json
+```
+
+Add your API key to the auth section:
+```json
+{
+  "auth": {
+    "profiles": {
+      "opencode:default": {
+        "provider": "opencode",
+        "mode": "api_key",
+        "apiKey": "YOUR_OPENCODE_API_KEY_HERE"
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "opencode/kimi-k2.5-free"
+      }
+    }
+  }
+}
+```
+
+### Step 3: Verify Setup
+Test the configuration:
+```bash
+cd ~/openclaw
+node dist/index.js doctor --non-interactive
+```
+
+You should see green checkmarks for the model connection.
+
+**Note:** Kimi K2.5 via OpenCode Zen is currently free with generous limits. Monitor your usage at https://opencode.ai/zen/dashboard
+
+---
+
 ## Phase 5: Security Hardening (15 minutes)
 
 ### Step 1: Configure UFW Firewall
