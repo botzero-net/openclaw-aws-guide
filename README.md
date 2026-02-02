@@ -396,6 +396,80 @@ scp -i ~/.ssh/openclaw-key.pem ubuntu@YOUR_EC2_IP:~/.openclaw/openclaw.json.back
 
 ---
 
+## Phase 10: EBS Snapshot Backup (Recommended)
+
+AWS EBS snapshots provide point-in-time backups of your entire instance. **First snapshot is effectively free** (stored in S3, compressed).
+
+### Cost
+- **Free tier:** 1GB/month snapshot storage
+- **Actual cost:** ~$0.05/GB/month (8GB volume ≈ $0.20-0.40/month)
+- **Incremental:** Only changed blocks stored after first snapshot
+
+### Creating Your First Snapshot
+
+**Method 1: AWS Console (Easiest)**
+1. Go to EC2 → Instances
+2. Select your `openclaw-server` instance
+3. Click "Storage" tab → Click the volume ID
+4. Click "Actions" → "Create snapshot"
+5. Add description: "OpenClaw fresh setup - YYYY-MM-DD"
+6. Click "Create snapshot"
+
+**Method 2: AWS CLI (From instance)**
+```bash
+# Install AWS CLI
+sudo apt install -y awscli
+
+# Configure (use your AWS access keys)
+aws configure
+
+# Get volume ID
+VOLUME_ID=$(aws ec2 describe-instances \
+  --filters "Name=tag:Name,Values=openclaw-server" \
+  --query "Reservations[0].Instances[0].BlockDeviceMappings[0].Ebs.VolumeId" \
+  --output text)
+
+# Create snapshot
+aws ec2 create-snapshot \
+  --volume-id $VOLUME_ID \
+  --description "OpenClaw setup $(date +%Y-%m-%d)"
+```
+
+### Automated Daily Snapshots (Optional)
+
+Create a cron job on your local machine (not the EC2 instance):
+```bash
+# On your local machine, add to crontab
+crontab -e
+
+# Add line for daily snapshot at 3 AM
+0 3 * * * aws ec2 create-snapshot --volume-id vol-XXXXX --description "OpenClaw auto $(date +\%Y-\%m-\%d)"
+```
+
+### Restoring From Snapshot
+
+**If you break something:**
+1. Go to EC2 → Snapshots
+2. Find your snapshot, click "Actions" → "Create image"
+3. Launch new instance from that image
+4. Update your SSH config with new IP
+5. Done - back to working state
+
+**Or create new volume from snapshot:**
+1. Snapshots → Select snapshot → "Create volume"
+2. Stop your instance (don't terminate!)
+3. Detach broken volume, attach restored volume
+4. Start instance
+
+### Snapshot Retention
+
+**Keep 3-7 snapshots max** to control costs:
+- 1 weekly (keep for 4 weeks)
+- 1 monthly (keep for 3 months)
+- Delete old ones in AWS Console
+
+---
+
 ## Troubleshooting
 
 ### Issue: Gateway won't start
